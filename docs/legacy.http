@@ -1,0 +1,123 @@
+@port = 3099
+### Pobierz wszystkie członkostwa (GET)
+GET http://localhost:{{port}}/legacy/memberships
+Accept: application/json
+
+### Utwórz nowe członkostwo (POST) - przypadek prawidłowy z płatnością miesięczną
+POST http://localhost:{{port}}/legacy/memberships
+Content-Type: application/json
+
+{
+  "name": "Srebrny Plan",
+  "recurringPrice": 75.0,
+  "paymentMethod": "credit card",
+  "billingInterval": "monthly",
+  "billingPeriods": 8
+}
+
+### Utwórz nowe członkostwo (POST) - przypadek prawidłowy z płatnością roczną
+POST http://localhost:{{port}}/legacy/memberships
+Content-Type: application/json
+
+{
+  "name": "Platynowy Plan Roczny",
+  "recurringPrice": 500.0,
+  "paymentMethod": "credit card",
+  "billingInterval": "yearly",
+  "billingPeriods": 2
+}
+
+### Utwórz nowe członkostwo (POST) - brakujące pola obowiązkowe
+POST http://localhost:{{port}}/legacy/memberships
+Content-Type: application/json
+
+{
+  "paymentMethod": "credit card",
+  "billingInterval": "monthly",
+  "billingPeriods": 8
+}
+
+### Utwórz nowe członkostwo (POST) - negatywna cena
+POST http://localhost:{{port}}/legacy/memberships
+Content-Type: application/json
+
+{
+  "name": "Plan z Błędem",
+  "recurringPrice": -50.0,
+  "paymentMethod": "credit card",
+  "billingInterval": "monthly",
+  "billingPeriods": 8
+}
+
+### Utwórz nowe członkostwo (POST) - płatność gotówką dla ceny powyżej 100
+POST http://localhost:{{port}}/legacy/memberships
+Content-Type: application/json
+
+{
+  "name": "Plan Gotówkowy z Błędem",
+  "recurringPrice": 150.0,
+  "paymentMethod": "cash",
+  "billingInterval": "monthly",
+  "billingPeriods": 8
+}
+
+### Utwórz nowe członkostwo (POST) - błąd: miesięczny okres > 12 miesięcy
+POST http://localhost:{{port}}/legacy/memberships
+Content-Type: application/json
+
+{
+  "name": "Plan z Błędem",
+  "recurringPrice": 75.0,
+  "paymentMethod": "credit card",
+  "billingInterval": "monthly",
+  "billingPeriods": 13
+}
+
+### Utwórz nowe członkostwo (POST) - błąd: miesięczny okres < 6 miesięcy
+POST http://localhost:{{port}}/legacy/memberships
+Content-Type: application/json
+
+{
+  "name": "Plan z Błędem",
+  "recurringPrice": 75.0,
+  "paymentMethod": "credit card",
+  "billingInterval": "monthly",
+  "billingPeriods": 5
+}
+
+### Utwórz nowe członkostwo (POST) - błąd: roczny okres > 10 lat
+POST http://localhost:{{port}}/legacy/memberships
+Content-Type: application/json
+
+{
+  "name": "Plan z Błędem",
+  "recurringPrice": 500.0,
+  "paymentMethod": "credit card",
+  "billingInterval": "yearly",
+  "billingPeriods": 11
+}
+
+### Utwórz nowe członkostwo (POST) - błąd: roczny okres > 3 lata ale < 10 lat
+POST http://localhost:{{port}}/legacy/memberships
+Content-Type: application/json
+
+{
+  "name": "Plan z Błędem",
+  "recurringPrice": 500.0,
+  "paymentMethod": "credit card",
+  "billingInterval": "yearly",
+  "billingPeriods": 5
+}
+
+### Utwórz nowe członkostwo (POST) - błąd: nieprawidłowy okres rozliczeniowy
+POST http://localhost:{{port}}/legacy/memberships
+Content-Type: application/json
+
+{
+  "name": "Plan z Błędem",
+  "recurringPrice": 75.0,
+  "paymentMethod": "credit card",
+  "billingInterval": "quarterly",
+  "billingPeriods": 4
+}
+

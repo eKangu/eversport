@@ -4,7 +4,7 @@
     "uuid": "123e4567-e89b-12d3-a456-426614174000",
     "name": "Platinum Plan",
     "userId": 2000,
-    "recurringPrice": 150.0,
+    "recurringPrice": 150,
     "validFrom": "2023-01-01",
     "validUntil": "2023-12-31",
     "state": "active",
@@ -18,7 +18,7 @@
     "uuid": "123e4567-e89b-12d3-a456-426614174001",
     "name": "Gold Plan",
     "userId": 2000,
-    "recurringPrice": 100.0,
+    "recurringPrice": 100,
     "validFrom": "2023-02-01",
     "validUntil": "2023-12-31",
     "state": "active",
@@ -32,13 +32,27 @@
     "uuid": "123e4567-e89b-12d3-a456-426614174002",
     "name": "Gold Plan",
     "userId": 2000,
-    "recurringPrice": 100.0,
+    "recurringPrice": 100,
     "validFrom": "2023-02-01",
     "validUntil": "2023-12-31",
     "state": "active",
     "assignedBy": "Admin",
     "paymentMethod": null,
     "billingInterval": "monthly",
-    "billingPeriods": 6    
+    "billingPeriods": 6
+  },
+  {
+    "id": 4,
+    "uuid": "8d7feb2a-93fe-4411-910b-058df6a4c63f",
+    "name": "Silver Plan Modern",
+    "userId": 2000,
+    "recurringPrice": 75,
+    "validFrom": "2025-06-26T06:40:18.563Z",
+    "validUntil": "2026-02-26T07:40:18.563Z",
+    "state": "active",
+    "assignedBy": "Admin",
+    "paymentMethod": "credit card",
+    "billingInterval": "monthly",
+    "billingPeriods": 8
   }
 ]

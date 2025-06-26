@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const memberships = require('../../data/memberships.json');
-const membershipPeriods = require('../../data/membership-periods.json');
+const membershipPeriods = require('../../data/membership-periods.json'); // array will be shadowed later
 const { v4: uuidv4 } = require('uuid');
 
 /**
@@ -26,6 +26,7 @@ router.post("/", (req, res) => {
     if (req.body.billingPeriods > 12) {
       return res.status(400).json({ message: "billingPeriodsMoreThan12Months" });
     }
+      // should be req.body.billingPeriods
     if (req.billingPeriods < 6) {
       return res.status(400).json({ message: "billingPeriodsLessThan6Months" });
     }
@@ -72,11 +73,14 @@ router.post("/", (req, res) => {
     billingPeriods: req.body.billingPeriods,
     billingInterval: req.body.billingInterval,
   };
+    // only mutates in-memory array, data lost on restart
   memberships.push(newMembership);
 
+    // this local variable shadows the global membershipPeriods
   const membershipPeriods = []
   let periodStart = validFrom
   for (let i = 0; i < req.body.billingPeriods; i++) {
+      // validFrom parameter shadows loop variable
     const validFrom = periodStart
     const validUntil = new Date(validFrom)
     if (req.body.billingInterval === 'monthly') {
@@ -107,6 +111,7 @@ router.post("/", (req, res) => {
 router.get("/", (req, res) => {
   const rows = []
   for (const membership of memberships) {
+      //  p.membershipId but JSON data has p.membership
     const periods = membershipPeriods.filter(p => p.membershipId === membership.id)
     rows.push({ membership, periods })
   }

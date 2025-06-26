@@ -1,0 +1,18 @@
+@port = 3099
+### Get all memberships (GET)
+GET http://localhost:{{port}}/memberships
+Accept: application/json
+
+### Create new membership (POST) - valid case with monthly payment
+POST http://localhost:{{port}}/memberships
+Content-Type: application/json
+
+{
+  "name": "Silver Plan Modern",
+  "recurringPrice": 75.0,
+  "paymentMethod": "credit card",
+  "billingInterval": "monthly",
+  "billingPeriods": 8
+}
+
+

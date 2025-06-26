@@ -1,0 +1,484 @@
+openapi: 3.0.3
+info:
+  title: Eversport Membership API
+  description: |
+    API for managing memberships in the Eversport system.
+    
+    **Two API versions are available:**
+    - **Legacy API** (`/legacy/memberships`) - deprecated version with bugs and simplifications
+    - **Modern API** (`/memberships`) - new, improved version with better validation
+    
+    **Main differences between versions:**
+    - Legacy API stores data only in memory (data is lost on restart)
+    - Modern API persists data to JSON files
+    - Modern API has better error handling and validation
+    - Legacy API has validation bugs (e.g. `req.billingPeriods` instead of `req.body.billingPeriods`)
+  version: 1.0.0
+  contact:
+    name: Eversport Development Team
+servers:
+  - url: http://localhost:3099
+    description: Development server
+
+paths:
+  # Modern API endpoints
+  /memberships:
+    get:
+      summary: Get all memberships with periods (Modern API)
+      description: Returns a list of all memberships with their assigned periods
+      tags:
+        - Modern Memberships
+      responses:
+        '200':
+          description: List of memberships with periods
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MembershipResponse'
+              example:
+                - membership:
+                    id: 1
+                    uuid: "123e4567-e89b-12d3-a456-426614174000"
+                    name: "Platinum Plan"
+                    userId: 2000
+                    recurringPrice: 150
+                    validFrom: "2023-01-01T00:00:00.000Z"
+                    validUntil: "2023-12-31T00:00:00.000Z"
+                    state: "active"
+                    assignedBy: "Admin"
+                    paymentMethod: "credit card"
+                    billingInterval: "monthly"
+                    billingPeriods: 12
+                  periods:
+                    - id: 1
+                      uuid: "123e4567-e89b-12d3-a456-426614174000"
+                      membership: 1
+                      start: "2023-01-01T00:00:00.000Z"
+                      end: "2023-01-31T00:00:00.000Z"
+                      state: "issued"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Create new membership (Modern API)
+      description: |
+        Creates a new membership with billing periods.
+        Automatically generates periods based on billingInterval and billingPeriods.
+        
+        **Validation rules:**
+        - name and recurringPrice are mandatory
+        - recurringPrice cannot be negative
+        - for cash: recurringPrice maximum 100
+        - for monthly: billingPeriods between 6-12
+        - for yearly: billingPeriods between 3-10
+      tags:
+        - Modern Memberships
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipCreateRequest'
+            example:
+              name: "Gold Plan"
+              recurringPrice: 75
+              paymentMethod: "credit card"
+              billingInterval: "monthly"
+              billingPeriods: 8
+      responses:
+        '201':
+          description: Membership created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipCreateResponse'
+              example:
+                membership:
+                  id: 4
+                  uuid: "8d7feb2a-93fe-4411-910b-058df6a4c63f"
+                  name: "Gold Plan"
+                  user: 2000
+                  recurringPrice: 75
+                  validFrom: "2025-06-26T06:40:18.563Z"
+                  validUntil: "2026-02-26T07:40:18.563Z"
+                  state: "active"
+                  paymentMethod: "credit card"
+                  billingInterval: "monthly"
+                  billingPeriods: 8
+                membershipPeriods:
+                  - id: 4
+                    uuid: "3cd07cd6-c231-4098-981b-bc0b592852e0"
+                    membershipId: 4
+                    start: "2025-06-26T06:40:18.563Z"
+                    end: "2025-07-26T06:40:18.563Z"
+                    state: "active"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    enum:
+                      - missingMandatoryFields
+                      - negativeRecurringPrice
+                      - cashPriceBelow100
+                      - billingPeriodsLessThan6Months
+                      - billingPeriodsMoreThan12Months
+                      - billingPeriodsLessThan3Years
+                      - billingPeriodsMoreThan10Years
+                      - invalidBillingPeriods
+              examples:
+                missingFields:
+                  summary: Missing mandatory fields
+                  value:
+                    message: "missingMandatoryFields"
+                negativePrice:
+                  summary: Negative price
+                  value:
+                    message: "negativeRecurringPrice"
+                cashLimit:
+                  summary: Cash limit exceeded
+                  value:
+                    message: "cashPriceBelow100"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Legacy API endpoints
+  /legacy/memberships:
+    get:
+      summary: Get all memberships with periods (Legacy API)
+      description: |
+        **⚠️ DEPRECATED API** - Use Modern API instead
+        
+        Returns a list of all memberships with their assigned periods.
+        **Bug:** period filtering uses wrong field (`p.membershipId` instead of `p.membership`)
+      tags:
+        - Legacy Memberships (Deprecated)
+      deprecated: true
+      responses:
+        '200':
+          description: List of memberships with periods
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LegacyMembershipResponse'
+
+    post:
+      summary: Create new membership (Legacy API)
+      description: |
+        **⚠️ DEPRECATED API** - Use Modern API instead
+        
+        Creates a new membership with billing periods.
+        
+        **Known bugs in this API:**
+        - `req.billingPeriods` instead of `req.body.billingPeriods` at line 27
+        - Incorrect validation logic for yearly billing (lines 32-38)
+        - Data stored only in memory (lost on restart)
+        - Variable shadowing (lines 68, 75)
+        - Incorrect filtering in GET (line 108)
+      tags:
+        - Legacy Memberships (Deprecated)
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegacyMembershipCreateRequest'
+      responses:
+        '201':
+          description: Membership created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyMembershipCreateResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    enum:
+                      - missingMandatoryFields
+                      - negativeRecurringPrice
+                      - cashPriceBelow100
+                      - billingPeriodsLessThan6Months
+                      - billingPeriodsMoreThan12Months
+                      - billingPeriodsLessThan3Years
+                      - billingPeriodsMoreThan10Years
+                      - invalidBillingPeriods
+
+components:
+  schemas:
+    # Modern API schemas
+    Membership:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique membership identifier
+        uuid:
+          type: string
+          format: uuid
+          description: Membership UUID
+        name:
+          type: string
+          description: Membership plan name
+        userId:
+          type: integer
+          description: ID of the user assigned to the membership
+        recurringPrice:
+          type: number
+          minimum: 0
+          description: Price per billing period
+        validFrom:
+          type: string
+          format: date-time
+          description: Membership validity start date
+        validUntil:
+          type: string
+          format: date-time
+          description: Membership validity end date
+        state:
+          type: string
+          enum: [ active, pending, expired ]
+          description: Membership state
+        assignedBy:
+          type: string
+          description: Who assigned the membership
+        paymentMethod:
+          type: string
+          enum: [ credit card, cash ]
+          nullable: true
+          description: Payment method
+        billingInterval:
+          type: string
+          enum: [ monthly, yearly ]
+          description: Billing interval
+        billingPeriods:
+          type: integer
+          minimum: 1
+          description: Number of billing periods
+      required:
+        - id
+        - uuid
+        - name
+        - userId
+        - recurringPrice
+        - validFrom
+        - validUntil
+        - state
+        - assignedBy
+        - billingInterval
+        - billingPeriods
+
+    MembershipPeriod:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique period identifier
+        uuid:
+          type: string
+          format: uuid
+          description: Period UUID
+        membership:
+          type: integer
+          description: ID of the membership this period belongs to
+        start:
+          type: string
+          format: date-time
+          description: Period start date
+        end:
+          type: string
+          format: date-time
+          description: Period end date
+        state:
+          type: string
+          enum: [ active, issued, planned ]
+          description: Period state
+      required:
+        - id
+        - uuid
+        - membership
+        - start
+        - end
+        - state
+
+    MembershipResponse:
+      type: object
+      properties:
+        membership:
+          $ref: '#/components/schemas/Membership'
+        periods:
+          type: array
+          items:
+            $ref: '#/components/schemas/MembershipPeriod'
+      required:
+        - membership
+        - periods
+
+    MembershipCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Membership plan name
+          minLength: 1
+        recurringPrice:
+          type: number
+          minimum: 0
+          description: Price per billing period
+        paymentMethod:
+          type: string
+          enum: [ credit card, cash ]
+          nullable: true
+          description: Payment method
+        billingInterval:
+          type: string
+          enum: [ monthly, yearly ]
+          description: Billing interval
+        billingPeriods:
+          type: integer
+          minimum: 1
+          description: |
+            Number of billing periods
+            - for monthly: between 6-12
+            - for yearly: between 3-10
+      required:
+        - name
+        - recurringPrice
+        - billingInterval
+        - billingPeriods
+
+    PostMembership:
+      type: object
+      description: Membership in POST response format (legacy-compatible)
+      allOf:
+        - $ref: '#/components/schemas/Membership'
+        - type: object
+          properties:
+            user:
+              type: integer
+              description: User ID (legacy field name)
+          required:
+            - user
+
+    PostMembershipPeriod:
+      type: object
+      description: Membership period in POST response format (legacy-compatible)
+      allOf:
+        - $ref: '#/components/schemas/MembershipPeriod'
+        - type: object
+          properties:
+            membershipId:
+              type: integer
+              description: Membership ID (legacy field name)
+          required:
+            - membershipId
+
+    MembershipCreateResponse:
+      type: object
+      properties:
+        membership:
+          $ref: '#/components/schemas/PostMembership'
+        membershipPeriods:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostMembershipPeriod'
+      required:
+        - membership
+        - membershipPeriods
+
+    # Legacy API schemas (deprecated)
+    LegacyMembershipResponse:
+      type: object
+      description: "⚠️ DEPRECATED response format"
+      properties:
+        membership:
+          $ref: '#/components/schemas/PostMembership'
+        periods:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostMembershipPeriod'
+          description: "⚠️ Bug: may return empty arrays due to incorrect filtering"
+      required:
+        - membership
+        - periods
+
+    LegacyMembershipCreateRequest:
+      type: object
+      description: "⚠️ DEPRECATED request format"
+      properties:
+        name:
+          type: string
+          description: Membership plan name
+        recurringPrice:
+          type: number
+          description: Price per billing period
+        paymentMethod:
+          type: string
+          enum: [ credit card, cash ]
+          description: Payment method
+        billingInterval:
+          type: string
+          enum: [ monthly, yearly, weekly ]
+          description: "Billing interval (weekly supported but not validated properly)"
+        billingPeriods:
+          type: integer
+          description: "Number of billing periods (validation has bugs)"
+        validFrom:
+          type: string
+          format: date-time
+          description: "Optional start date (if not provided, uses current date)"
+      required:
+        - name
+        - recurringPrice
+
+    LegacyMembershipCreateResponse:
+      type: object
+      description: "⚠️ DEPRECATED response format"
+      properties:
+        membership:
+          $ref: '#/components/schemas/PostMembership'
+        membershipPeriods:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostMembershipPeriod'
+          description: "⚠️ Data stored only in memory - lost on restart"
+      required:
+        - membership
+        - membershipPeriods
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error description
+      required:
+        - message
+
+tags:
+  - name: Modern Memberships
+    description: New, improved API for memberships
+  - name: Legacy Memberships (Deprecated)
+    description: "⚠️ Deprecated API with bugs - use Modern API"
